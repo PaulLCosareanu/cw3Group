@@ -1,6 +1,6 @@
 <template>
   <div class="app-content">
-    <div v-if="showProducts">
+    <div v-if="list.showProducts">
       <div class="sortBy">
         <label for="category">Choose a category to sort with:</label>
         <select
@@ -26,7 +26,7 @@
       <!-- <h2>Password:{{user.password}}</h2> -->
       <!-- </div> -->
       <div class="productList">
-        <div v-for="item in lessons" :key="item._id" class="product">
+        <div v-for="item in list.lessons" :key="item._id" class="product">
           <!-- {{item._id}} -->
           <div class="productTop">
             <img class="image" v-bind:src="item.img_link" />
@@ -42,7 +42,7 @@
           </button>
         </div>
       </div>
-      <div v-if="showCheckoutButton">
+      <div v-if="list.showCheckoutButton">
         <button
           type="button"
           class="checkoutButton"
@@ -52,83 +52,21 @@
         </button>
       </div>
     </div>
-    <div v-if="showCheckout">
-      <div class="productList">
-        <div
-          v-for="element in checkoutItems"
-          :key="element.id"
-          class="productBought"
-        >
-          <div class="productTop">
-            <img class="image" v-bind:src="element.img" />
-            <div class="productText">
-              <h3>{{ element.subject }}</h3>
-              <p>{{ element.location }}</p>
-              <p>price:{{ element.price }}</p>
-              <p>Quantity: {{ element.quantity }}</p>
-            </div>
-          </div>
-          <button v-on:click="deleteItem(element.id)" class="button">
-            Cancel item
-          </button>
-        </div>
-      </div>
-      <button type="button" v-on:click="displayProducts()">Go back</button>
-      <h3>Please specify your name:</h3>
-      <input
-        type="text"
-        name="name"
-        v-model="name"
-        id="name"
-        v-on:keypress="
-          isLetter();
-          checkForm();
-        "
-        v-on:keyup="checkForm()"
-      />
-      <h3>Please specify your number:</h3>
-      <input
-        type="text"
-        name="number"
-        id="number"
-        v-model="number"
-        v-on:keypress="
-          isNumber();
-          checkForm();
-        "
-        v-on:keyup="checkForm()"
-        maxlength="11"
-      />
-      <p v-if="showError" style="color:red">
-        Incomplete form or invalid characters entered!
-      </p>
-      <div v-if="showSubmitButton">
-        <button type="button" v-on:click="checkout()">Submit Order</button>
-      </div>
-      <h1 v-if="showSuccess" style="color:green">
-        Thank you for buying these products! Have a nice day
-      </h1>
-    </div>
+    
   </div>
 </template>
 
 <script>
 export default {
   name: "app",
+  props:["list"],
 
   data() {
     return {
-      lessons: [],
-      checkoutItems: [],
+      
       object: {},
       order: "asc",
       category: "subject",
-      showProducts: true,
-      showCheckoutButton: false,
-      showCheckout: false,
-      showSuccess: false,
-      showError: false,
-      showSubmitButton: false,
       name: "",
       number: "",
       isLet: false,
@@ -144,68 +82,8 @@ export default {
   //   this.checkUpdateStock();
   // },
   methods: {
-    checkout(){
-      let bodyUpdate={}
-      this.checkoutItems.forEach(element => {
-        const body={
-          id:element.id,
-          quantity:element.quantity,
-          price:element.price,
-          user:this.name,
-          number:this.number
-        }
-        this.lessons.forEach(el => {
-          if(el._id==element.id){
-            bodyUpdate={
-            id:element.id,
-            $set:{quantity:el.quantity}
-        }
-          }
-        });
-        
-        fetch("https://cw2heroku.herokuapp.com/api/products/order",{
-          method:"post",
-          body:JSON.stringify(body),
-          headers:{"Content-Type":"application/json"}
   
-        })
-          .then((response) => {if(response.status==200){
-            this.showSuccess=true;
-            localStorage.clear();
-            this.checkoutItems=[];
-            
-
-          }})
-             try {
-               
-               fetch("https://cw2heroku.herokuapp.com/api/products/order",{
-              method:"put",
-              body:JSON.stringify(bodyUpdate),
-              headers:{"Content-Type":"application/json"}
-            })
-              console.log("success")
-             } catch (error) {
-               console.log(error)
-             }
-          // .then((response)=>{if(response.status==200){
-          //   this.showSuccess=true;
-          // }})
-          // .then((data) => {
-            // console.log(data)
-          // });
-        
-      });
-    },
-    checkForm() {
-      if (this.isLet && this.isNum && this.number != "" && this.name != "") {
-        this.showSubmitButton = true;
-        console.log(this.number);
-        this.showError = false;
-      } else {
-        this.showSubmitButton = false;
-        this.showError = true;
-      }
-    },
+    
     isLetter() {
       let nm = this.name;
       console.log("step 1");
@@ -234,15 +112,15 @@ export default {
       fetch("https://cw2heroku.herokuapp.com/api/products")
         .then((response) => response.json())
         .then((data) => {
-          this.lessons = data;
+          this.list.lessons = data;
           this.checkUpdateStock();
           this.checkCheckout();
         });
     },
     checkUpdateStock() {
-      this.checkoutItems = JSON.parse(localStorage.product);
-      this.lessons.forEach((element) => {
-        this.checkoutItems.forEach((el) => {
+      this.list.checkoutItems = JSON.parse(localStorage.product);
+      this.list.lessons.forEach((element) => {
+        this.list.checkoutItems.forEach((el) => {
           if (element._id == el.id) {
             element.quantity = element.quantity - el.quantity;
           }
@@ -250,15 +128,15 @@ export default {
       });
     },
     checkCheckout() {
-      if (this.checkoutItems.length != 0) {
-        this.showCheckoutButton = true;
+      if (this.list.checkoutItems.length != 0) {
+        this.list.showCheckoutButton = true;
       } else {
-        this.showCheckoutButton = false;
+        this.list.showCheckoutButton = false;
       }
     },
     addToCart(id) {
       let itemNotFound = true;
-      this.lessons.forEach((element) => {
+      this.list.lessons.forEach((element) => {
         if (element._id == id && element.quantity != 0) {
           this.object = {
             id: element._id,
@@ -268,21 +146,22 @@ export default {
             img: element.img_link,
             quantity: 1,
           };
-          this.checkoutItems.forEach((el) => {
+          this.list.checkoutItems.forEach((el) => {
             if (el.id == element._id) {
               el.quantity++;
               itemNotFound = false;
             }
           });
           element.quantity--;
-          if (itemNotFound || this.checkoutItems.length == 0) {
-            this.checkoutItems.push(this.object);
+          if (itemNotFound || this.list.checkoutItems.length == 0) {
+            this.list.checkoutItems.push(this.object);
           }
-          console.log(this.checkoutItems);
+          console.log(this.list.checkoutItems);
 
-          localStorage.product = JSON.stringify(this.checkoutItems);
+          localStorage.product = JSON.stringify(this.list.checkoutItems);
           this.checkCheckout();
         }
+        this.$emit("checkout",this.list.checkoutItems)
       });
     },
     onChangeCategory(event) {
@@ -292,15 +171,18 @@ export default {
       this.sortBy();
     },
     displayCheckout() {
-      this.showProducts = false;
-      this.showCheckout = true;
+      this.list.showProducts = false;
+      this.list.showCheckout = true;
       // this.checkoutItems = JSON.parse(localStorage.product_id);
-      this.showSuccess = false;
+      this.list.showSuccess = false;
+      this.$emit("displaySettings",this.list);
+
     },
     displayProducts() {
-      this.showProducts = true;
-      this.showCheckout = false;
+      this.list.showProducts = true;
+      this.list.showCheckout = false;
       this.checkCheckoutButton();
+      
     },
     onChangeOrder(event) {
       console.log(2);
@@ -328,13 +210,13 @@ export default {
       console.log(3);
       if (this.order == "asc") {
         //ascendent sort
-        this.lessons.sort((a, b) =>
+        this.list.lessons.sort((a, b) =>
           a[this.category] < b[this.category] ? -1 : 1
         );
         console.log(this.category);
       } else if (this.order == "desc") {
         //descending sort
-        this.lessons.sort((a, b) =>
+        this.list.lessons.sort((a, b) =>
           a[this.category] > b[this.category] ? -1 : 1
         );
       }
